@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package nakamoto;
+
+service NakamotoThermo {
+  rpc GetState(Empty) returns (NodeStateResponse);
+  rpc GetEnergyIndex(Empty) returns (EnergyIndexResponse);
+  rpc GetTransactionProof(TxRequest) returns (TxProofResponse);
+}
+
+message Empty {}
+
+message NodeStateResponse {
+  bool running = 1;
+  uint64 height = 2;
+  uint32 peers = 3;
+  uint64 uptime_secs = 4;
+  uint64 blocks_relayed = 5;
+  uint64 blocks_served = 6;
+  uint64 blocks_stored = 7;
+  double block_cache_mb = 8;
+  uint64 txs_relayed = 9;
+  bool p2p_connected = 10;
+  uint64 headers_synced = 11;
+  uint64 headers_valid = 12;
+  uint64 headers_invalid = 13;
+  string mmr_root = 14;
+  uint64 cuckoo_items = 15;
+  double cuckoo_load = 16;
+  string best_hash = 17;
+  double chain_difficulty = 18;
+  uint64 invs_relayed = 19;
+  string sync_phase = 20;
+  double db_size_mb = 21;
+  bool resumed = 22;
+}
+
+message EnergyIndexResponse {
+  double joules_per_sat = 1;
+  double sat_per_kwh = 2;
+  uint64 block_height = 3;
+  double energy_per_block_joules = 4;
+  double used_asic_efficiency_j_per_th = 5;
+  double difficulty = 6;
+  double hashes_per_block = 7;
+  uint64 block_reward_sat = 8;
+  double kw_per_block = 9;
+  double network_power_gw = 10;
+}
+
+message TxRequest {
+  string txid = 1;
+}
+
+message TxProofResponse {
+  bool confirmed = 1;
+  uint64 block_height = 2;
+  string block_hash = 3;
+  string merkle_root = 4;
+  uint32 tx_index = 5;
+  repeated string proof_hashes = 6;
+  int32 block_version = 7;
+  string prev_block_hash = 8;
+  uint32 block_timestamp = 9;
+  uint32 block_bits = 10;
+  uint32 block_nonce = 11;
+}

@@ -1,0 +1,24 @@
+# Rust build artifacts
+target/
+
+
+# Private data - NEVER commit this
+ldk_node_data/
+nakamoto.db
+*.db
+*.db-shm
+*.db-wal
+
+# Python stuff
+__pycache__/
+*.pyc
+.env
+
+# Logs and temporary files
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
