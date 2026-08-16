@@ -591,30 +591,48 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchLiveData, 5 * 60 * 1000);
     setTimeout(runTestSuite, 1000); 
 });
-</script><!-- 💡 INSIGHT: Honor System Paywall. Uses a Lightning Address link so no backend is needed. -->
+</script><!-- 💡 INSIGHT: Blurred Alpha Paywall. Hides the signal visually until payment is confirmed. -->
 <div id="paywall-overlay" style="display:none; position:absolute; inset:0; background:rgba(10,10,10,0.95); backdrop-filter:blur(8px); z-index:100; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem; border-radius:12px; text-align:center;">
     <div>
         <h3 class="text-2xl font-bold text-btc-orange mb-2">⚡ Alpha Locked</h3>
         <p class="text-btc-muted text-sm px-4 mb-6 max-w-md">Support Nakamoto-Lite with 1,000 sats (~$0.20) to unlock today's GTEP Actionable Signal.</p>
-        <!--💡 Replace 'nakamoto@walletofsatoshi.com' with your actual Lightning Address -->
-        <a href="lightning:nakamoto@walletofsatoshi.com" class="bg-btc-orange text-black font-bold py-2 px-6 rounded-lg hover:opacity-80 inline-block mb-4 pointer-events-auto">Pay 1,000 sats</a>
+        <!-- 💡 Replace 'yourusername@strike.me' with your actual Strike Lightning Address -->
+        <a href="lightning:jefferydhendrix@strike.me" class="bg-btc-orange text-black font-bold py-2 px-6 rounded-lg hover:opacity-80 inline-block mb-4 pointer-events-auto">Pay 1,000 sats</a>
     </div>
     <button id="unlock-button" class="text-btc-muted underline text-xs hover:text-white pointer-events-auto">I have paid (Unlock Terminal)</button>
 </div>
 
+<style>
+    /* The CSS class that does the blurring */
+    .locked-blur {
+        filter: blur(8px) !important;
+        pointer-events: none;
+        user-select: none;
+    }
+</style>
+
 <script>
     let isUnlocked = sessionStorage.getItem('gtep_unlocked') === 'true';
 
-    // 💡 INSIGHT: Tip Button redirects to Lightning Address
-    const tipBtn = document.getElementById('tip-button');
-    if (tipBtn) {
-        tipBtn.addEventListener('click', () => {
-            // 💡 Replace this with your actual Lightning Address
-            window.open('lightning:nakamoto@walletofsatoshi.com', '_blank');
+    // Apply or remove the blur effect on the Alpha cards
+    function applyLockState() {
+        const lockedEls = document.querySelectorAll('#hero-fair-value-card, #hero-verdict-card, #main-verdict-card');
+        lockedEls.forEach(el => {
+            if (!isUnlocked) el.classList.add('locked-blur');
+            else el.classList.remove('locked-blur');
         });
     }
 
-    // 💡 INSIGHT: Paywall Logic
+    // 💡 INSIGHT: Tip Button redirects to Strike Lightning Address
+    const tipBtn = document.getElementById('tip-button');
+    if (tipBtn) {
+        tipBtn.addEventListener('click', () => {
+            // 💡 Replace this with your actual Strike Lightning Address
+            window.open('lightning:yourusername@strike.me', '_blank');
+        });
+    }
+
+    // 💡 INSIGHT: Paywall Overlay Logic for the Verdict Tab
     const verdictPanel = document.getElementById('panel-verdict');
     const overlay = document.getElementById('paywall-overlay');
     const unlockBtn = document.getElementById('unlock-button');
@@ -625,6 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkPaywall() {
+        applyLockState();
         if (!isUnlocked && !document.getElementById('panel-verdict').classList.contains('hidden')) {
             overlay.style.display = 'flex';
         } else {
@@ -640,10 +659,15 @@ document.addEventListener('DOMContentLoaded', () => {
         unlockBtn.addEventListener('click', () => {
             isUnlocked = true;
             sessionStorage.setItem('gtep_unlocked', 'true');
+            applyLockState();
             overlay.style.display = 'none';
         });
     }
+    
+    // Run once on load to blur the cards immediately
+    setTimeout(applyLockState, 100);
 </script>
+
 
 </body>
 </html>
