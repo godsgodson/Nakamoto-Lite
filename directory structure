@@ -1,8 +1,0 @@
-project/
-├── Cargo.toml
-├── build.rs
-├── proto/
-│   └── nakamoto.proto
-├── nakamoto-lite.html
-└── src/
-    └── main.rs
