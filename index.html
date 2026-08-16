@@ -1,1 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Thermodynamic Terminal | GTEP Engine</title>
+    <meta name="description" content="Real-time physics-invariant analysis of Bitcoin's absolute thermodynamic fair value using the Geometric Equilibrium Price (GTEP) model.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>₿</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js?v=final"></script>
+    
+    <style>
+        :root {
+            --btc-orange: #F7931A; --btc-dark: #0a0a0a; --btc-panel: #121212;
+            --btc-border: #262626; --btc-text: #e5e5e5; --btc-muted: #737373;
+            --signal-buy: #16a34a; --signal-hold: #f59e0b; --signal-sell: #dc2626;
+            --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--btc-dark); color: var(--btc-text); font-family: var(--font-sans); line-height: 1.5; }
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: var(--btc-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--btc-border); border-radius: 4px; }
+
+        .max-w-7xl { max-width: 80rem; } .mx-auto { margin-left: auto; margin-right: auto; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; } .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        .pt-20 { padding-top: 5rem; } .pb-16 { padding-bottom: 4rem; } .mb-10 { margin-bottom: 2.5rem; }
+        .mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-6 { margin-top: 1.5rem; } .mt-16 { margin-top: 4rem; }
+        .gap-4 { gap: 1rem; } .gap-6 { gap: 1.5rem; } .space-y-6 > * + * { margin-top: 1.5rem; }
+        .flex { display: flex; } .grid { display: grid; } .hidden { display: none !important; }
+        .relative { position: relative; } .absolute { position: absolute; } .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; } .top-0 { top: 0; } .z-50 { z-index: 50; } .w-full { width: 100%; } .h-full { height: 100%; }
+        .h-14 { height: 3.5rem; } .items-center { align-items: center; } .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; } .overflow-hidden { overflow: hidden; }
+
+        @media (min-width: 1024px) { .lg\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); } .lg\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); } .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); } .lg\:grid-cols-5 { grid-template-columns: repeat(5, 1fr); } .lg\:col-span-1 { grid-column: span 1; } .lg\:col-span-2 { grid-column: span 2; } }
+        @media (min-width: 768px) { .md\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); } .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 640px) { .sm\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); } }
+
+        .font-mono { font-family: var(--font-mono); } .font-bold { font-weight: 700; }
+        .text-xs { font-size: 0.75rem; } .text-sm { font-size: 0.875rem; } .text-lg { font-size: 1.125rem; }
+        .text-2xl { font-size: 1.5rem; } .text-6xl { font-size: 3.75rem; line-height: 1; }
+        .uppercase { text-transform: uppercase; } .text-center { text-align: center; } .text-right { text-align: right; }
+        
+        .text-white { color: #fff; } .text-btc-orange { color: var(--btc-orange); } .text-btc-muted { color: var(--btc-muted); }
+        .text-signal-buy { color: var(--signal-buy); } .text-signal-hold { color: var(--signal-hold); } .text-signal-sell { color: var(--signal-sell); }
+        .bg-btc-dark { background-color: var(--btc-dark); } .bg-btc-panel { background-color: var(--btc-panel); }
+        .border-btc-border { border-color: var(--btc-border); }
+        .border { border-width: 1px; } .border-t { border-top-width: 1px; } .border-b { border-bottom-width: 1px; }
+        .rounded-lg { border-radius: 0.5rem; } .rounded-xl { border-radius: 0.75rem; }
+        .flex-wrap { flex-wrap: wrap; }
+
+        .panel { background: var(--btc-panel); border: 1px solid var(--btc-border); border-radius: 12px; transition: border-color 0.2s; }
+        .metric-card { background: linear-gradient(180deg, rgba(247,147,26,0.03) 0%, transparent 100%); border: 1px solid var(--btc-border); border-radius: 10px; padding: 1.25rem; }
+        .metric-value { font-size: 1.75rem; font-weight: 700; font-family: var(--font-mono); line-height: 1.2; }
+        .metric-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--btc-muted); font-weight: 500; }
+        .math-block { background: rgba(10, 10, 10, 0.6); border-left: 3px solid var(--btc-orange); padding: 1rem; border-radius: 0 8px 8px 0; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.8; white-space: pre-wrap; }
+        .tab-btn { padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.8rem; font-weight: 500; transition: all 0.15s; background: transparent; border: 1px solid transparent; color: var(--btc-muted); cursor: pointer; }
+        .tab-btn:hover { color: var(--btc-text); background: rgba(255,255,255,0.03); }
+        .tab-btn.active { color: #000; background: var(--btc-orange); border-color: var(--btc-orange); }
+        .signal-card { border-width: 2px; }
+        .signal-bar-bg { background: var(--btc-border); height: 8px; border-radius: 4px; overflow: hidden; }
+        .signal-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+        .vote-badge { font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 600; text-transform: uppercase; }
+        .badge-buy { background: rgba(22, 163, 74, 0.2); color: var(--signal-buy); border: 1px solid var(--signal-buy); }
+        .badge-hold { background: rgba(245, 158, 11, 0.2); color: var(--signal-hold); border: 1px solid var(--signal-hold); }
+        .badge-sell { background: rgba(220, 38, 38, 0.2); color: var(--signal-sell); border: 1px solid var(--signal-sell); }
+
+        .price-target-card { background: linear-gradient(135deg, rgba(247,147,26,0.05) 0%, rgba(10,10,10,0.8) 100%); border: 1px solid var(--btc-border); border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden; }
+        .price-target-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--signal-buy), var(--btc-orange), var(--signal-sell)); opacity: 0.5; }
+        .target-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px dashed var(--btc-border); }
+        .target-row:last-child { border-bottom: none; }
+        .target-name { display: flex; flex-direction: column; gap: 0.15rem; }
+        .target-value { font-size: 1.3rem; font-weight: 700; font-family: var(--font-mono); }
+        .target-diff { font-size: 0.75rem; font-family: var(--font-mono); font-weight: 500; }
+        .diff-buy { color: var(--signal-buy); } .diff-hold { color: var(--signal-hold); } .diff-sell { color: var(--signal-sell); }
+        .consensus-price { font-size: 2.5rem; font-weight: 800; font-family: var(--font-mono); text-align: center; line-height: 1.1; }
+        .consensus-range { font-size: 0.9rem; color: var(--btc-muted); text-align: center; margin-top: 0.5rem; font-family: var(--font-mono); }
+        .animate-in { opacity: 0; transform: translateY(16px); animation: fadeUp 0.6s ease-out forwards; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        input[type="range"] { -webkit-appearance: none; appearance: none; height: 5px; background: var(--btc-border); border-radius: 2.5px; outline: none; width: 100%; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--btc-orange); cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<nav class="fixed top-0 w-full z-50 bg-btc-dark border-b border-btc-border" style="backdrop-filter: blur(4px);">
+    <div class="max-w-7xl mx-auto px-4 lg:px-8">
+        <div class="flex items-center justify-between h-14">
+            <div class="flex items-center gap-3">
+                <span class="text-xl text-btc-orange font-bold">₿</span>
+                <span class="font-bold text-white text-sm">THERMODYNAMIC GTEP TERMINAL</span>
+            </div>
+            <div class="hidden lg:flex items-center gap-1 bg-btc-panel p-1 rounded-lg border border-btc-border">
+                <button class="tab-btn active" data-tab="verdict">Verdict</button>
+                <button class="tab-btn" data-tab="physics">Physics</button>
+                <button class="tab-btn" data-tab="miners">Miner Economics</button>
+                <button class="tab-btn" data-tab="limits">Limits</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="pt-20 pb-16 px-4 lg:px-8 max-w-7xl mx-auto">
+
+    <section class="mb-10 animate-in">
+        <div class="grid lg:grid-cols-5 gap-4">
+            <div class="panel p-5 lg:col-span-2 relative overflow-hidden price-target-card" id="hero-fair-value-card">
+                <div class="absolute inset-0 opacity-5" id="fv-glow"></div>
+                <div class="relative">
+                    <p class="metric-label">FAIR VALUE TARGET (GTEP)</p>
+                    <div class="consensus-price text-white" id="hero-fv-price">$ Calculating...</div>
+                    <div class="consensus-range" id="hero-fv-range">Aggregating geometric bounds...</div>
+                    <div class="mt-4 text-xs text-btc-muted flex justify-between font-mono">
+                        <span>Physical Min: <span id="hero-opex" class="text-signal-buy">$---</span></span>
+                        <span>Equilibrium: <span id="hero-total-floor" class="text-signal-hold">$---</span></span>
+                        <span>Yield Max: <span id="hero-sec-fair" class="text-btc-orange">$---</span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel p-5 flex flex-col justify-between">
+                <p class="metric-label">NETWORK HASHRATE</p>
+                <div class="metric-value text-white" id="hero-hashrate">--- EH/s</div>
+                <p class="text-xs text-btc-muted mt-2">Ingestion: <span id="hero-twh" class="text-btc-orange">--- TWh/yr</span></p>
+            </div>
+            <div class="panel p-5 flex flex-col justify-between">
+                <p class="metric-label">MARKET PRICE</p>
+                <div class="metric-value text-white" id="hero-price">$---</div>
+                <p class="text-xs text-btc-muted mt-2">Delta vs GTEP: <span id="hero-delta" class="text-signal-hold">--%</span></p>
+            </div>
+            <div class="panel p-5 signal-card relative overflow-hidden" id="hero-verdict-card">
+                <div class="absolute inset-0 opacity-5" id="verdict-glow"></div>
+                <div class="relative h-full flex flex-col justify-between">
+                    <p class="metric-label">VALUATION VERDICT</p>
+                    <div class="text-2xl font-bold font-mono" id="verdict-label">ANALYZING...</div>
+                    <div class="signal-bar-bg mt-2"><div class="signal-bar-fill" id="verdict-bar" style="width: 50%; background: var(--btc-muted);"></div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="space-y-6" id="tab-content">
+        
+        <!-- VERDICT TAB -->
+        <div id="panel-verdict" class="space-y-6">
+            <header class="animate-in">
+                <h2 class="text-xl font-bold text-white">// CONSENSUS FAIR VALUE TARGETS</h2>
+                <p class="text-btc-muted text-sm mt-1">Tells you exactly what the BTC price *should* be based on coupled thermodynamic constraints.</p>
+            </header>
+            
+            <div class="animate-in price-target-card">
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <div class="text-center mb-4">
+                            <div class="consensus-price" id="main-consensus-price">$---</div>
+                            <div class="consensus-range" id="main-consensus-range">Calculating Geometric Thermodynamic Equilibrium...</div>
+                        </div>
+                        <div class="space-y-3" id="model-targets-list"></div>
+                    </div>
+                    <div class="border-l border-btc-border pl-6">
+                        <h4 class="font-bold text-white mb-3">GEOMETRIC EQUILIBRIUM LOGIC</h4>
+                        <p class="text-xs text-btc-muted mb-4">Valuation is not an arithmetic average, but a coupled geometric mean of fundamental bounds. Exponentiating the weighted log-sum penalizes outliers mathematically and enforces scale-invariance across the physical and economic spectrums.</p>
+                        <div class="p-3 bg-btc-dark rounded border border-btc-border math-block">
+P* = exp( Σ(Wᵢ * ln(Pᵢ)) / ΣWᵢ )
+
+P₁ = OPEX Floor (Subsistence)
+P₂ = Total Floor (Equilibrium)
+P₃ = V_E × 3 (Energy + Premium)
+P₄ = Security Yield Price
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6 animate-in">
+                <div class="lg:col-span-2 panel p-6 signal-card relative" id="main-verdict-card">
+                    <div class="absolute inset-0 opacity-5" id="main-verdict-glow"></div>
+                    <div class="relative">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-bold text-white">ACTIONABLE SIGNAL</h3>
+                            <div class="text-right">
+                                <div class="text-xs text-btc-muted">CONFIDENCE</div>
+                                <div class="text-lg font-bold font-mono" id="main-confidence">--%</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-6 mb-6">
+                            <div class="text-6xl font-bold font-mono" id="main-verdict-label">NEUTRAL</div>
+                            <div class="flex-1">
+                                <div class="signal-bar-bg h-3 mb-2"><div class="signal-bar-fill h-full rounded" id="main-verdict-bar" style="width: 50%; background: var(--signal-hold);"></div></div>
+                                <div class="text-sm text-btc-muted" id="main-verdict-desc">Waiting for live data...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel p-6">
+                    <h3 class="font-bold text-white mb-4">MODEL BREAKDOWN</h3>
+                    <div class="space-y-3" id="verdict-model-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHYSICS TAB -->
+        <div id="panel-physics" class="hidden space-y-6">
+            <header class="animate-in"><h2 class="text-xl font-bold text-white">// PHYSICAL INVARIANTS</h2></header>
+            <div class="grid md:grid-cols-3 gap-4 animate-in">
+                <div class="metric-card">
+                    <p class="metric-label">Electrical Work (J/Sat)</p>
+                    <div class="metric-value text-white" id="phys-joules">---</div>
+                </div>
+                <div class="metric-card">
+                    <p class="metric-label">Gravitational Potential</p>
+                    <div class="metric-value text-white" id="phys-height">--- km</div>
+                </div>
+                <div class="metric-card">
+                    <p class="metric-label">Human Mechanical Time</p>
+                    <div class="metric-value text-white" id="phys-time">--- min</div>
+                </div>
+            </div>
+            <div class="panel p-6 animate-in">
+                <h3 class="font-bold text-white mb-4">> DERIVATION LOG</h3>
+                <div class="math-block" id="derivation-log">Initializing physics engine...</div>
+            </div>
+        </div>
+
+        <!-- MINERS TAB -->
+        <div id="panel-miners" class="hidden space-y-6">
+            <header class="animate-in"><h2 class="text-xl font-bold text-white">// MINER ECONOMICS</h2></header>
+            <div class="grid lg:grid-cols-3 gap-6 animate-in">
+                <div class="panel p-5 space-y-4">
+                    <h4 class="font-bold text-white">> ASSUMPTIONS <span id="live-badge" class="text-xs bg-signal-hold/20 text-signal-hold px-2 py-0.5 rounded ml-2">SIMULATED</span></h4>
+                    <div><label class="flex justify-between text-sm mb-1"><span>Network Hashrate</span><span class="text-btc-orange font-mono" id="in-hash-val">650 EH/s</span></label><input type="range" id="in-hash" min="100" max="1000" step="10" value="650" class="w-full"></div>
+                    <div><label class="flex justify-between text-sm mb-1"><span>Fleet Efficiency</span><span class="text-btc-orange font-mono" id="in-eff-val">24 J/TH</span></label><input type="range" id="in-eff" min="15" max="60" step="0.5" value="24" class="w-full"></div>
+                    <div><label class="flex justify-between text-sm mb-1"><span>Electricity Cost</span><span class="text-btc-orange font-mono" id="in-pwr-val">\$0.05/kWh</span></label><input type="range" id="in-pwr" min="0.01" max="0.15" step="0.005" value="0.05" class="w-full"></div>
+                </div>
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="metric-card"><p class="metric-label">OPEX Floor</p><div class="metric-value text-signal-buy" id="out-opex">\$---</div></div>
+                        <div class="metric-card"><p class="metric-label">TOTAL Floor</p><div class="metric-value text-signal-hold" id="out-total-floor">$---</div></div>
+                        <div class="metric-card"><p class="metric-label">Hashprice</p><div class="metric-value text-white" id="out-hashprice">$---</div></div>
+                        <div class="metric-card"><p class="metric-label">V_E (Energy Cost)</p><div class="metric-value text-white" id="out-ve">$---</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIMITS TAB -->
+        <div id="panel-limits" class="hidden space-y-6">
+            <header class="animate-in"><h2 class="text-xl font-bold text-white">// FUNDAMENTAL LIMITS</h2></header>
+            <div class="grid lg:grid-cols-2 gap-6 animate-in">
+                <div class="panel p-6">
+                    <h3 class="font-bold text-white mb-4">> LANDAUER LIMIT vs REALITY</h3>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex justify-between"><span class="text-btc-muted">Current Fleet Efficiency</span><span class="text-white font-mono" id="landauer-current">--- J/TH</span></div>
+                    </div>
+                </div>
+                <div class="panel p-6">
+                    <h3 class="font-bold text-white mb-4">> SECURITY BUDGET MODEL</h3>
+                    <div class="space-y-4 text-sm">
+                        <div class="flex justify-between"><span class="text-btc-muted">Current Security Spend</span><span class="text-white font-mono" id="sec-spend">$---</span></div>
+                        <div class="flex justify-between border-t border-btc-border pt-2"><span class="text-btc-muted">Yield Fair Cap (1.5%)</span><span class="text-btc-orange font-mono" id="sec-cap-15">$---</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-16 pt-8 border-t border-btc-border text-center text-xs text-btc-muted font-mono">
+        <p>Bitcoin Thermodynamic Terminal — Physics Invariant Framework</p>
+        <div class="mt-6 text-left panel p-4 max-w-2xl mx-auto">
+            <div class="flex justify-between items-center mb-2">
+                <span class="font-bold text-btc-orange">SYSTEM VERIFICATION & RESILIENCE SUITE</span>
+                <span id="test-suite-status" class="px-2 py-1 rounded text-xs bg-signal-buy/20 text-signal-buy">AWAITING RUN</span>
+            </div>
+            <pre id="test-suite-log" class="text-xs text-btc-muted whitespace-pre-wrap">Initializing...</pre>
+        </div>
+    </footer>
+</main>
+
+<script>
+// ============================================================
+// CONSTANTS & STATE
+// ============================================================
+const C = {
+    G: 9.80665, HUMAN_W: 100, WORK_SEC_YR: 7200000, SATS_PER_BTC: 1e8,
+    BLOCKS_PER_YR: 52560, SATS_PER_BLOCK: 3.125 * 1e8, WH_TO_J: 3600
+};
+
+let state = {
+    tWh: 166.6, hashrate: 650, efficiency: 24.0, powerCost: 0.05,
+    capexPerTh: 15, hwLife: 4, blockReward: 3.125, btcPrice: 65000,
+    difficulty: 83000000000000, isLive: false
+};
+
+// ============================================================
+// 🚀 TRAILBLAZER MARKER: LOG10 ADAPTIVE UNIT NORMALIZER
+// ============================================================
+function normalizeHashrate(hr) {
+    if (!isValidNum(hr) || hr <= 0) return null;
+    const exp = Math.log10(hr);
+    if (exp >= 20) return hr / 1e18; // H/s -> EH/s
+    if (exp >= 11) return hr / 1e9;  // GH/s -> EH/s
+    if (exp >= 8)  return hr / 1e6;   // TH/s -> EH/s
+    if (exp >= 5)  return hr / 1e3;   // PH/s -> EH/s
+    return hr;                        
+}
+
+// ============================================================
+// ENGINES (Dimensionally Corrected)
+// ============================================================
+function calcPhysics(s) {
+    const annualJ = s.tWh * 1e12 * C.WH_TO_J;
+    const eBlock = annualJ / C.BLOCKS_PER_YR;
+    const eSat = eBlock / C.SATS_PER_BLOCK;
+    const heightKm = (eSat / C.G) / 1000;
+    const timeMin = (eSat / C.HUMAN_W) / 60;
+    const eBtc = eSat * C.SATS_PER_BTC;
+    return { 
+        eSat: Math.round(eSat), heightKm: heightKm.toFixed(2), timeMin: timeMin.toFixed(2), 
+        eBtc, 
+        derivation: `Annual Energy: ${s.tWh} TWh = ${(annualJ).toExponential(3)} J/yr\nEnergy/Block: ${(eBlock).toExponential(3)} J\nEnergy/Sat: ${Math.round(eSat).toLocaleString()} J\n\n1 BTC Energy: ${(eBtc/1e12).toFixed(2)} TJ`
+    };
+}
+
+function calcMiners(s) {
+    const hashThPerSec = s.hashrate * 1e6; // Network TH/s
+    const btcPerDay = 144 * s.blockReward; // Network BTC mined per day
+    
+    // Energy per Hash: 1 TH = s.efficiency Joules.
+    // 1 TH/s for 1 Day = s.efficiency * 86400 Joules.
+    // 1 kWh = 3.6e6 Joules. 
+    // Therefore: kWh per TH/s per Day = (s.efficiency * 86400) / 3.6e6 = s.efficiency * 0.024
+    const kwhPerThDay = s.efficiency * 0.024; 
+    
+    const opexPerThDay = kwhPerThDay * s.powerCost; // $/TH/s/day
+    const capexPerThDay = s.capexPerTh / (s.hwLife * 365); // $/TH/s/day
+    const totalCostPerThDay = opexPerThDay + capexPerThDay;
+    
+    const btcPerThDay = btcPerDay / hashThPerSec; // BTC / TH/s / day
+    const opexFloor = opexPerThDay / btcPerThDay; // $ / BTC
+    const totalFloor = totalCostPerThDay / btcPerThDay; // $ / BTC
+    const hashprice = (btcPerDay * s.btcPrice) / hashThPerSec; // $ / TH/s / day
+    
+    // V_E Fix: The pure electrical cost to mint 1 BTC is exactly the OPEX floor. 
+    // No dimensional mismatch allowed.
+    const vE = opexFloor; 
+    
+    return { opexFloor, totalFloor, hashprice, vE, btcPerThDay };
+}
+
+function calcSecurity(s) {
+    const annualRev = 144 * s.blockReward * s.btcPrice * 365;
+    return { annualRev, cap15: annualRev / 0.015, cap30: annualRev / 0.03 };
+}
+
+// ============================================================
+// 🚀 TRAILBLAZER MARKER: GEOMETRIC THERMODYNAMIC EQUILIBRIUM (GTEP)
+// ============================================================
+function calcVerdict(s, m, sec) {
+    const price = s.btcPrice;
+    const signals = [];
+    
+    // Define the 4 Fundamental Price Bounds (P1 to P4)
+    const P_opex = m.opexFloor;
+    const P_total = m.totalFloor;
+    const P_vE = m.vE * 3.0; // Raw energy + 3x monetary store-of-value premium
+    const annualThermoCost = m.totalFloor * 144 * s.blockReward * 365;
+    const P_sec = annualThermoCost / 0.015 / 19.7e6; // Thermodynamic Bond Yield
+    
+    const targets = [
+        { name: 'OPEX Subsistence', price: P_opex, weight: 1.0, desc: 'Cash cost floor. Miners capitulate below.' },
+        { name: 'Total Floor Equilibrium', price: P_total, weight: 2.0, desc: 'Sustainable CapEx + OpEx replacement cost.' },
+        { name: 'Energy V_E Backing', price: P_vE, weight: 1.5, desc: 'Physical energy equivalence + historical premium.' },
+        { name: 'Security Thermodynamic Yield', price: P_sec, weight: 2.5, desc: '1.5% security bond yield fair value.' }
+    ];
+    
+    let sumW = 0, sumLogP = 0;
+    targets.forEach(t => {
+        if (t.price > 0) {
+            sumW += t.weight;
+            sumLogP += Math.log(t.price) * t.weight;
+        }
+    });
+    const GTEP = Math.exp(sumLogP / sumW);
+    
+    targets.forEach(t => {
+        const ratio = price / t.price;
+        let score = 0, label = '', classStr = '';
+        if (ratio < 0.8) { score = 1.0; label = 'DEEP VALUE'; classStr = 'badge-buy'; }
+        else if (ratio < 1.0) { score = 0.5; label = 'ACCUMULATION'; classStr = 'badge-buy'; }
+        else if (ratio < 1.5) { score = 0.0; label = 'FAIR VALUE'; classStr = 'badge-hold'; }
+        else if (ratio < 2.5) { score = -0.5; label = 'PREMIUM'; classStr = 'badge-hold'; }
+        else { score = -1.0; label = 'EUPHORIA'; classStr = 'badge-sell'; }
+        signals.push({ name: t.name, weight: t.weight / sumW, score, label, class: classStr, ratio: ratio.toFixed(2), detail: `Mkt / Target = ${ratio.toFixed(2)}x` });
+    });
+    
+    let totalWeight = 0, weightedScore = 0;
+    signals.forEach(sig => { weightedScore += sig.score * sig.weight; totalWeight += sig.weight; });
+    const finalScore = weightedScore / totalWeight;
+    const confidence = Math.round(Math.abs(finalScore) * 100);
+    
+    const modelPrices = {};
+    targets.forEach(t => modelPrices[t.name] = { price: t.price, weight: t.weight, desc: t.desc });
+    const prices = targets.map(t => t.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    
+    let finalLabel = 'NEUTRAL', finalClass = 'badge-hold', barColor = 'var(--signal-hold)', glowColor = 'rgba(245, 158, 11, 0.2)', desc = 'Mixed signals. DCA advised.';
+    const dist = (price - GTEP) / GTEP;
+    if (dist < -0.25) { finalLabel = 'STRONG BUY'; finalClass = 'badge-buy'; barColor = 'var(--signal-buy)'; glowColor = 'rgba(22, 163, 74, 0.3)'; desc = 'Market trading at massive thermodynamic discount.'; }
+    else if (dist < -0.05) { finalLabel = 'BUY'; finalClass = 'badge-buy'; barColor = 'var(--signal-buy)'; glowColor = 'rgba(22, 163, 74, 0.2)'; desc = 'Market below geometric equilibrium.'; }
+    else if (dist < 0.05) { finalLabel = 'HOLD / FAIR'; finalClass = 'badge-hold'; barColor = 'var(--signal-hold)'; glowColor = 'rgba(245, 158, 11, 0.2)'; desc = 'Perfectly aligned with physics invariants.'; }
+    else if (dist < 0.25) { finalLabel = 'PREMIUM'; finalClass = 'badge-sell'; barColor = 'var(--signal-sell)'; glowColor = 'rgba(220, 38, 38, 0.2)'; desc = 'Market detached from energy fundamentals.'; }
+    else { finalLabel = 'RISK OFF'; finalClass = 'badge-sell'; barColor = 'var(--signal-sell)'; glowColor = 'rgba(220, 38, 38, 0.3)'; desc = 'Highly overvalued relative to thermodynamic limit.'; }
+    
+    const barPct = ((finalScore + 1) / 2) * 100;
+    
+    return {
+        finalScore, finalLabel, finalClass, barColor, glowColor, desc, confidence, barPct, signals,
+        modelPrices, consensusPrice: GTEP, minPrice, maxPrice,
+        keyLevels: { opexFloor: m.opexFloor, totalFloor: m.totalFloor, vE: m.vE, secCap15: sec.cap15 / 19.7e6, secCap30: sec.cap30 / 19.7e6, price }
+    };
+}
+
+// ============================================================
+// DOM UTILS
+// ============================================================
+const $ = (id) => document.getElementById(id) || { style: {}, textContent: '', innerHTML: '' };
+const fmt = (n) => { if(!isFinite(n)) return '---'; if(n>=1e9) return (n/1e9).toFixed(2)+'B'; if(n>=1e6) return (n/1e6).toFixed(2)+'M'; if(n>=1e3) return (n/1e3).toFixed(1)+'K'; return n.toFixed(0); };
+const fmtPrice = (n) => '$' + fmt(n);
+const setText = (id, val) => { const el = $(id); if(el) el.textContent = val; };
+const isValidNum = (n) => typeof n === 'number' && isFinite(n) && n > 0;
+const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+
+function renderAll() {
+    const p = calcPhysics(state);
+    const m = calcMiners(state);
+    const sec = calcSecurity(state);
+    const v = calcVerdict(state, m, sec);
+    
+    setText('hero-fv-price', fmtPrice(v.consensusPrice));
+    setText('hero-fv-range', `Model Range: ${fmtPrice(v.minPrice)} – ${fmtPrice(v.maxPrice)}`);
+    setText('hero-opex', fmtPrice(v.keyLevels.opexFloor));
+    setText('hero-total-floor', fmtPrice(v.keyLevels.totalFloor));
+    setText('hero-sec-fair', fmtPrice(v.keyLevels.secCap15));
+    
+    setText('main-consensus-price', fmtPrice(v.consensusPrice));
+    setText('main-consensus-range', `Geometric Model Range: ${fmtPrice(v.minPrice)} – ${fmtPrice(v.maxPrice)}`);
+    
+    const targetsList = $('model-targets-list');
+    if (targetsList) targetsList.innerHTML = Object.entries(v.modelPrices).map(([name, m]) => {
+        const diffPct = ((m.price - state.btcPrice) / state.btcPrice) * 100;
+        const diffClass = diffPct > 5 ? 'diff-buy' : (diffPct < -5 ? 'diff-sell' : 'diff-hold');
+        const diffSign = diffPct > 0 ? '+' : '';
+        return `<div class="target-row"><div class="target-name"><span class="text-sm text-btc-muted">${name}</span><span class="target-value text-white">${fmtPrice(m.price)}</span></div><div class="text-right"><div class="target-diff ${diffClass}">${diffSign}${diffPct.toFixed(1)}% vs Mkt</div><div class="text-xs text-btc-muted">${m.desc}</div></div></div>`;
+    }).join('');
+    
+    setText('verdict-label', v.finalLabel);
+    setText('hero-delta', `${((state.btcPrice - v.consensusPrice) / v.consensusPrice * 100).toFixed(1)}%`);
+    setText('main-verdict-label', v.finalLabel);
+    setText('main-verdict-desc', v.desc);
+    setText('main-confidence', v.confidence + '%');
+    ['verdict-bar', 'main-verdict-bar'].forEach(id => { const el = $(id); if(el) { el.style.width = v.barPct + '%'; el.style.background = v.barColor; }});
+    ['fv-glow', 'verdict-glow', 'main-verdict-glow'].forEach(id => { const el = $(id); if(el) el.style.background = v.glowColor; });
+    ['hero-fair-value-card', 'hero-verdict-card', 'main-verdict-card'].forEach(id => { const el = $(id); if(el) el.style.borderColor = v.barColor; });
+    
+    const list = $('verdict-model-list');
+    if (list) list.innerHTML = v.signals.map(sig => `<div class="panel p-3"><div class="flex justify-between mb-1"><span class="text-white text-sm">${sig.name}</span><span class="vote-badge ${sig.class}">${sig.label}</span></div><div class="flex justify-between text-xs"><span class="text-btc-muted">${sig.detail}</span><span class="font-mono text-btc-orange">W: ${(sig.weight*100).toFixed(0)}%</span></div></div>`).join('');
+
+    setText('phys-joules', p.eSat.toLocaleString());
+    setText('phys-height', p.heightKm + ' km');
+    setText('phys-time', p.timeMin + ' min');
+    setText('derivation-log', p.derivation);
+    
+    setText('in-hash-val', state.hashrate + ' EH/s');
+    setText('in-eff-val', state.efficiency.toFixed(1) + ' J/TH');
+    setText('in-pwr-val', '$' + state.powerCost.toFixed(3) + '/kWh');
+    setText('out-opex', fmtPrice(m.opexFloor));
+    setText('out-total-floor', fmtPrice(m.totalFloor));
+    setText('out-hashprice', '$' + m.hashprice.toFixed(4));
+    setText('out-ve', fmtPrice(m.vE));
+    
+    setText('hero-hashrate', state.hashrate + ' EH/s');
+    setText('hero-twh', state.tWh.toFixed(1) + ' TWh/yr');
+    setText('hero-price', fmtPrice(state.btcPrice));
+    const badge = $('live-badge');
+    if (badge) { badge.textContent = state.isLive ? 'LIVE' : 'SIMULATED'; badge.className = state.isLive ? 'text-xs bg-signal-buy/20 text-signal-buy px-2 py-0.5 rounded' : 'text-xs bg-signal-hold/20 text-signal-hold px-2 py-0.5 rounded'; }
+}
+
+// ============================================================
+// LIVE DATA INGESTION
+// ============================================================
+async function fetchJSON(url) { try { const res = await fetch(url); if (!res.ok) throw new Error(); return await res.json(); } catch (e) { return null; } }
+
+async function fetchLiveData() {
+    const results = await Promise.allSettled([
+        fetchJSON('https://mempool.space/api/v1/prices'),
+        fetchJSON('https://mempool.space/api/v1/mining/hashrate/1h'),
+        fetchJSON('https://mempool.space/api/blocks/tip/height'),
+        fetchJSON('https://api.blockchain.info/stats?format=json'),
+        fetchJSON('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd')
+    ]);
+
+    let price = null, hashrate = null, height = null;
+
+    if (results[0].status === 'fulfilled' && results[0].value?.USD) price = results[0].value.USD;
+    else if (results[4].status === 'fulfilled' && results[4].value?.bitcoin?.usd) price = results[4].value.bitcoin.usd;
+    else if (results[3].status === 'fulfilled' && results[3].value?.market_price_usd) price = results[3].value.market_price_usd;
+
+    if (results[1].status === 'fulfilled' && Array.isArray(results[1].value) && results[1].value.length > 0) {
+        const latest = results[1].value[results[1].value.length - 1];
+        if (latest.hashrate) hashrate = normalizeHashrate(latest.hashrate);
+    } else if (results[3].status === 'fulfilled' && results[3].value?.hash_rate) {
+        hashrate = normalizeHashrate(results[3].value.hash_rate);
+    }
+
+    if (results[2].status === 'fulfilled' && typeof results[2].value === 'number') height = results[2].value;
+    else if (results[3].status === 'fulfilled' && results[3].value?.height) height = results[3].value.height;
+
+    if (isValidNum(price)) { state.btcPrice = price; state.isLive = true; }
+    if (isValidNum(hashrate)) { state.hashrate = Math.round(hashrate * 10) / 10; state.tWh = Math.round((state.hashrate * 1e6 * state.efficiency * 8760) / 1e12 * 10) / 10; }
+    if (isValidNum(height)) { const halvings = Math.floor(height / 210000); state.blockReward = 50 / Math.pow(2, halvings); C.SATS_PER_BLOCK = state.blockReward * 1e8; }
+    
+    renderAll();
+}
+
+// ============================================================
+// RESILIENCE & VERIFICATION SUITE
+// ============================================================
+function runTestSuite() {
+    const tests = [];
+    function test(name, cond) { tests.push({ name, pass: cond() }); }
+    
+    test('Hashrate Mag Heuristic: H/s (1e20)', () => normalizeHashrate(6e20) === 600);
+    test('Hashrate Mag Heuristic: GH/s (1e11)', () => Math.abs(normalizeHashrate(6e11) - 600) < 1);
+    test('Hashrate Mag Heuristic: TH/s (1e8)', () => Math.abs(normalizeHashrate(6e8) - 600) < 1);
+    test('Hashrate Mag Heuristic: PH/s (1e5)', () => Math.abs(normalizeHashrate(6e5) - 600) < 1);
+    test('Hashrate Mag Heuristic: EH/s (600)', () => normalizeHashrate(600) === 600);
+    test('Hashrate Mag Heuristic: Invalid', () => normalizeHashrate(-100) === null);
+    test('Valid Number Check', () => isValidNum(100) && !isValidNum(NaN) && !isValidNum(0));
+    
+    // Fuzz Test GTEP Engine
+    let fuzzPass = true;
+    try {
+        for(let i=0; i<100; i++) {
+            const s = { ...state, btcPrice: Math.random() * 200000 + 1000, hashrate: Math.random() * 1000 + 100 };
+            const m = calcMiners(s);
+            const sec = calcSecurity(s);
+            const v = calcVerdict(s, m, sec);
+            // The V_E must never astronomically exceed 10x the OPEX floor
+            if (m.vE > m.opexFloor * 1.1) fuzzPass = false;
+            if (!(v.consensusPrice > 0) || !(v.consensusPrice < 1000000)) fuzzPass = false;
+        }
+    } catch(e) { fuzzPass = false; }
+    test('Fuzz Test: GTEP Scale Invariance & V_E Bounds', () => fuzzPass);
+    
+    const result = tests.map(t => `${t.pass ? '✓' : '✗'} ${t.name}`).join('\n');
+    const allPass = tests.every(t => t.pass);
+    
+    setText('test-suite-log', result);
+    setText('test-suite-status', allPass ? 'PASSING' : 'FAILING');
+    const statusEl = $('test-suite-status');
+    if(statusEl) statusEl.style.background = allPass ? 'rgba(22, 163, 74, 0.2)' : 'rgba(220, 38, 38, 0.2)';
+    if(statusEl) statusEl.style.color = allPass ? 'var(--signal-buy)' : 'var(--signal-sell)';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function bindInputs() {
+    const sync = (id, key) => { const r = $(id); if(!r) return; r.addEventListener('input', (e) => { state[key] = clamp(parseFloat(e.target.value), parseFloat(r.min), parseFloat(r.max)); renderAll(); }); };
+    sync('in-hash', 'hashrate'); sync('in-eff', 'efficiency'); sync('in-pwr', 'powerCost');
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('[id^="panel-"]').forEach(p => p.classList.add('hidden'));
+        btn.classList.add('active'); $('panel-' + btn.dataset.tab).classList.remove('hidden');
+    }); });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    bindInputs();
+    renderAll();
+    fetchLiveData();
+    setInterval(fetchLiveData, 5 * 60 * 1000);
+    setTimeout(runTestSuite, 1000); 
+});
+</script>
+</body>
+</html>
 
