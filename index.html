@@ -81,6 +81,8 @@
         input[type="range"] { -webkit-appearance: none; appearance: none; height: 5px; background: var(--btc-border); border-radius: 2.5px; outline: none; width: 100%; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--btc-orange); cursor: pointer; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/webln@0.2.3/dist/webln.min.js"></script>
+
 </head>
 <body>
 
@@ -91,6 +93,10 @@
                 <span class="text-xl text-btc-orange font-bold">₿</span>
                 <span class="font-bold text-white text-sm">THERMODYNAMIC GTEP TERMINAL</span>
             </div>
+            <button id="tip-button" class="text-xs font-bold text-btc-orange border border-btc-orange rounded-md px-3 py-1.5 hover:bg-btc-orange hover:text-black transition-colors">
+                ⚡ Tip Sats
+            </button>
+
             <div class="hidden lg:flex items-center gap-1 bg-btc-panel p-1 rounded-lg border border-btc-border">
                 <button class="tab-btn active" data-tab="verdict">Verdict</button>
                 <button class="tab-btn" data-tab="physics">Physics</button>
@@ -586,6 +592,89 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(runTestSuite, 1000); 
 });
 </script>
+<!-- 💡 INSIGHT: WebLN Paywall Logic. Intercepts the Verdict tab, forces a 10000 sat payment. No backend required. -->
+<div id="paywall-overlay" style="display:none; position:absolute; inset:0; background:rgba(10,10,10,0.9); backdrop-filter:blur(8px); z-index:100; flex-direction:column; align-items:center; justify-content:center; gap:1rem; border-radius:12px;">
+    <h3 class="text-2xl font-bold text-btc-orange">⚡ Alpha Locked</h3>
+    <p class="text-btc-muted text-sm text-center px-4">Pay 10000 sats to unlock today's GTEP Actionable Signal.</p>
+    <button id="unlock-button" class="bg-btc-orange text-black font-bold py-2 px-6 rounded-lg hover:opacity-80">Unlock for 100 sats</button>
+    <p id="paywall-error" class="text-signal-sell text-xs hidden"></p>
+</div>
+
+<script>
+    const PAYWALL_AMOUNT = 10000; // sats to unlock
+    let isUnlocked = sessionStorage.getItem('gtep_unlocked') === 'true';
+
+    // 💡 INSIGHT: Tip Button Logic
+    const tipBtn = document.getElementById('tip-button');
+    if (tipBtn) {
+        tipBtn.addEventListener('click', async () => {
+            try {
+                if (typeof window.webln === 'undefined') {
+                    alert("You need a WebLN wallet (like Alby) installed to tip!");
+                    return;
+                }
+                await window.webln.enable();
+                // Ask user tip amount (default 10000 sats)
+                const amt = prompt("How many sats to tip?", "10000");
+                if (amt && !isNaN(amt) && Number(amt) > 0) {
+                    await window.webln.sendPayment(`${Number(amt)}`); // WebLN generates the invoice
+                    alert("Thank you for the sats! ⚡");
+                }
+            } catch (e) {
+                console.error("Tip failed:", e);
+            }
+        });
+    }
+
+    // 💡 INSIGHT: Paywall Logic
+    const verdictPanel = document.getElementById('panel-verdict');
+    const overlay = document.getElementById('paywall-overlay');
+    const unlockBtn = document.getElementById('unlock-button');
+    const errBox = document.getElementById('paywall-error');
+
+    // Ensure overlay is appended to the verdict panel directly so it covers it cleanly
+    if (verdictPanel && overlay) {
+        verdictPanel.style.position = 'relative';
+        verdictPanel.appendChild(overlay);
+    }
+
+    function checkPaywall() {
+        if (!isUnlocked && !document.getElementById('panel-verdict').classList.contains('hidden')) {
+            overlay.style.display = 'flex';
+        } else {
+            overlay.style.display = 'none';
+        }
+    }
+    
+    // Monitor tab clicks to trigger paywall
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => setTimeout(checkPaywall, 50));
+    });
+
+    if (unlockBtn) {
+        unlockBtn.addEventListener('click', async () => {
+            errBox.classList.add('hidden');
+            try {
+                if (typeof window.webln === 'undefined') {
+                    errBox.textContent = "Install Alby browser extension to pay.";
+                    errBox.classList.remove('hidden');
+                    return;
+                }
+                await window.webln.enable();
+                // Generate & Pay invoice instantly in background
+                await window.webln.sendPayment(`${PAYWALL_AMOUNT}`); 
+                
+                // Success
+                isUnlocked = true;
+                sessionStorage.setItem('gtep_unlocked', 'true'); // Remains unlocked for their session
+                overlay.style.display = 'none';
+            } catch (e) {
+                errBox.textContent = "Payment failed or rejected.";
+                errBox.classList.remove('hidden');
+            }
+        });
+    }
+</script>
+
 </body>
 </html>
-
