@@ -591,38 +591,26 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchLiveData, 5 * 60 * 1000);
     setTimeout(runTestSuite, 1000); 
 });
-</script>
-<!-- 💡 INSIGHT: WebLN Paywall Logic. Intercepts the Verdict tab, forces a 10000 sat payment. No backend required. -->
-<div id="paywall-overlay" style="display:none; position:absolute; inset:0; background:rgba(10,10,10,0.9); backdrop-filter:blur(8px); z-index:100; flex-direction:column; align-items:center; justify-content:center; gap:1rem; border-radius:12px;">
-    <h3 class="text-2xl font-bold text-btc-orange">⚡ Alpha Locked</h3>
-    <p class="text-btc-muted text-sm text-center px-4">Pay 10000 sats to unlock today's GTEP Actionable Signal.</p>
-    <button id="unlock-button" class="bg-btc-orange text-black font-bold py-2 px-6 rounded-lg hover:opacity-80">Unlock for 100 sats</button>
-    <p id="paywall-error" class="text-signal-sell text-xs hidden"></p>
+</script><!-- 💡 INSIGHT: Honor System Paywall. Uses a Lightning Address link so no backend is needed. -->
+<div id="paywall-overlay" style="display:none; position:absolute; inset:0; background:rgba(10,10,10,0.95); backdrop-filter:blur(8px); z-index:100; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem; border-radius:12px; text-align:center;">
+    <div>
+        <h3 class="text-2xl font-bold text-btc-orange mb-2">⚡ Alpha Locked</h3>
+        <p class="text-btc-muted text-sm px-4 mb-6 max-w-md">Support Nakamoto-Lite with 1,000 sats (~$0.20) to unlock today's GTEP Actionable Signal.</p>
+        <!--💡 Replace 'nakamoto@walletofsatoshi.com' with your actual Lightning Address -->
+        <a href="lightning:nakamoto@walletofsatoshi.com" class="bg-btc-orange text-black font-bold py-2 px-6 rounded-lg hover:opacity-80 inline-block mb-4 pointer-events-auto">Pay 1,000 sats</a>
+    </div>
+    <button id="unlock-button" class="text-btc-muted underline text-xs hover:text-white pointer-events-auto">I have paid (Unlock Terminal)</button>
 </div>
 
 <script>
-    const PAYWALL_AMOUNT = 10000; // sats to unlock
     let isUnlocked = sessionStorage.getItem('gtep_unlocked') === 'true';
 
-    // 💡 INSIGHT: Tip Button Logic
+    // 💡 INSIGHT: Tip Button redirects to Lightning Address
     const tipBtn = document.getElementById('tip-button');
     if (tipBtn) {
-        tipBtn.addEventListener('click', async () => {
-            try {
-                if (typeof window.webln === 'undefined') {
-                    alert("You need a WebLN wallet (like Alby) installed to tip!");
-                    return;
-                }
-                await window.webln.enable();
-                // Ask user tip amount (default 10000 sats)
-                const amt = prompt("How many sats to tip?", "10000");
-                if (amt && !isNaN(amt) && Number(amt) > 0) {
-                    await window.webln.sendPayment(`${Number(amt)}`); // WebLN generates the invoice
-                    alert("Thank you for the sats! ⚡");
-                }
-            } catch (e) {
-                console.error("Tip failed:", e);
-            }
+        tipBtn.addEventListener('click', () => {
+            // 💡 Replace this with your actual Lightning Address
+            window.open('lightning:nakamoto@walletofsatoshi.com', '_blank');
         });
     }
 
@@ -630,9 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const verdictPanel = document.getElementById('panel-verdict');
     const overlay = document.getElementById('paywall-overlay');
     const unlockBtn = document.getElementById('unlock-button');
-    const errBox = document.getElementById('paywall-error');
 
-    // Ensure overlay is appended to the verdict panel directly so it covers it cleanly
     if (verdictPanel && overlay) {
         verdictPanel.style.position = 'relative';
         verdictPanel.appendChild(overlay);
@@ -646,32 +632,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Monitor tab clicks to trigger paywall
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => setTimeout(checkPaywall, 50));
     });
 
     if (unlockBtn) {
-        unlockBtn.addEventListener('click', async () => {
-            errBox.classList.add('hidden');
-            try {
-                if (typeof window.webln === 'undefined') {
-                    errBox.textContent = "Install Alby browser extension to pay.";
-                    errBox.classList.remove('hidden');
-                    return;
-                }
-                await window.webln.enable();
-                // Generate & Pay invoice instantly in background
-                await window.webln.sendPayment(`${PAYWALL_AMOUNT}`); 
-                
-                // Success
-                isUnlocked = true;
-                sessionStorage.setItem('gtep_unlocked', 'true'); // Remains unlocked for their session
-                overlay.style.display = 'none';
-            } catch (e) {
-                errBox.textContent = "Payment failed or rejected.";
-                errBox.classList.remove('hidden');
-            }
+        unlockBtn.addEventListener('click', () => {
+            isUnlocked = true;
+            sessionStorage.setItem('gtep_unlocked', 'true');
+            overlay.style.display = 'none';
         });
     }
 </script>
