@@ -591,19 +591,20 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchLiveData, 5 * 60 * 1000);
     setTimeout(runTestSuite, 1000); 
 });
-</script><!-- 💡 INSIGHT: Blurred Alpha Paywall. Hides the signal visually until payment is confirmed. -->
-<div id="paywall-overlay" style="display:none; position:absolute; inset:0; background:rgba(10,10,10,0.95); backdrop-filter:blur(8px); z-index:100; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem; border-radius:12px; text-align:center;">
+</script><!-- 💡 INSIGHT: Blurred Alpha Paywall with Copy/Paste Fallback -->
+<div id="paywall-overlay" style="display:none; position:absolute; inset:0; background:rgba(10,10,10,0.95); backdrop-filter:blur(8px); z-index:100; flex-direction:column; align-items:center; justify-content:center; gap:1.5rem; border-radius:12px; text-align:center; padding: 2rem;">
     <div>
         <h3 class="text-2xl font-bold text-btc-orange mb-2">⚡ Alpha Locked</h3>
-        <p class="text-btc-muted text-sm px-4 mb-6 max-w-md">Support Nakamoto-Lite with 1,000 sats (~$0.20) to unlock today's GTEP Actionable Signal.</p>
+        <p class="text-btc-muted text-sm px-4 mb-4 max-w-md">Support Nakamoto-Lite with 1,000 sats (~$0.20) to unlock today's GTEP Actionable Signal.</p>
         <!-- 💡 Replace 'yourusername@strike.me' with your actual Strike Lightning Address -->
-        <a href="lightning:jefferydhendrix@strike.me" class="bg-btc-orange text-black font-bold py-2 px-6 rounded-lg hover:opacity-80 inline-block mb-4 pointer-events-auto">Pay 1,000 sats</a>
+        <p class="text-white text-sm mb-1">Send to:</p>
+        <code id="ln-address" style="background: var(--btc-panel); padding: 0.5rem 1rem; border-radius: 6px; color: var(--btc-orange); display: inline-block; cursor: pointer;" onclick="navigator.clipboard.writeText(this.innerText); alert('Address copied! Paste it into your Strike app.');">jefferydhendrix@strike.me</code>
+        <p class="text-btc-muted text-xs mt-2">(Click the address to copy)</p>
     </div>
-    <button id="unlock-button" class="text-btc-muted underline text-xs hover:text-white pointer-events-auto">I have paid (Unlock Terminal)</button>
+    <button id="unlock-button" class="bg-btc-orange text-black font-bold py-3 px-8 rounded-lg hover:opacity-80 text-base">✅ I have paid (Unlock Terminal)</button>
 </div>
 
 <style>
-    /* The CSS class that does the blurring */
     .locked-blur {
         filter: blur(8px) !important;
         pointer-events: none;
@@ -614,7 +615,6 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
     let isUnlocked = sessionStorage.getItem('gtep_unlocked') === 'true';
 
-    // Apply or remove the blur effect on the Alpha cards
     function applyLockState() {
         const lockedEls = document.querySelectorAll('#hero-fair-value-card, #hero-verdict-card, #main-verdict-card');
         lockedEls.forEach(el => {
@@ -623,16 +623,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 💡 INSIGHT: Tip Button redirects to Strike Lightning Address
+    // 💡 INSIGHT: Tip Button now just copies the address to clipboard instead of trying to open an app
     const tipBtn = document.getElementById('tip-button');
     if (tipBtn) {
         tipBtn.addEventListener('click', () => {
-            // 💡 Replace this with your actual Strike Lightning Address
-            window.open('lightning:jefferydhendrix@strike.me', '_blank');
+            const addr = document.getElementById('ln-address').innerText;
+            navigator.clipboard.writeText(addr).then(() => {
+                alert('Lightning Address copied! Paste it into your Strike/Bitcoin wallet to send a tip.');
+            });
         });
     }
 
-    // 💡 INSIGHT: Paywall Overlay Logic for the Verdict Tab
     const verdictPanel = document.getElementById('panel-verdict');
     const overlay = document.getElementById('paywall-overlay');
     const unlockBtn = document.getElementById('unlock-button');
@@ -664,9 +665,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Run once on load to blur the cards immediately
     setTimeout(applyLockState, 100);
 </script>
+
 
 
 </body>
